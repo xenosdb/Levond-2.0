@@ -96,12 +96,35 @@ class BrandingIn(BaseModel):
     phone: Optional[str] = None
 
 class LeadIn(BaseModel):
-    name: str
+    title: Optional[str] = ""
+    name: Optional[str] = ""
+    contact_name: Optional[str] = ""
+    contact_email: Optional[str] = ""
+    contact_phone: Optional[str] = ""
     email: Optional[str] = ""
     phone: Optional[str] = ""
     value: Optional[float] = 0
-    stage: Optional[str] = "Nuevo"
+    estimated_value: Optional[float] = 0
+    currency: Optional[str] = "USD"
+    stage: Optional[str] = "lead"
+    source: Optional[str] = ""
+    destination: Optional[str] = ""
+    travel_date: Optional[str] = ""
+    pax: Optional[int] = 0
+    position: Optional[int] = 0
+    client_id: Optional[str] = ""
     notes: Optional[str] = ""
+
+class CrmTaskIn(BaseModel):
+    title: str
+    description: Optional[str] = ""
+    lead_id: Optional[str] = ""
+    client_id: Optional[str] = ""
+    due_at: Optional[str] = ""
+    remind_at: Optional[str] = ""
+    priority: Optional[str] = "medium"   # low | medium | high | urgent
+    status: Optional[str] = "pending"    # pending | in_progress | done | cancelled
+    assigned_to: Optional[str] = ""
 
 class ProductIn(BaseModel):
     name: str
@@ -386,7 +409,7 @@ EXPORT_COLLECTIONS = [
     "restaurant_orders", "retail_sales", "travel_bookings", "sales_orders", "invoices",
     "purchase_orders", "warehouses", "transfers", "accounts", "journal_entries",
     "projects", "tasks", "appointments", "equipment", "work_orders", "activity",
-    "counters", "nexus_activities", "travel_partners", "travel_proposals", "travel_clients",
+    "counters", "nexus_activities", "travel_partners", "travel_proposals", "travel_clients", "crm_tasks",
 ]
 
 @api.get("/tenant/export")
@@ -480,9 +503,42 @@ async def list_leads(user=Depends(get_current)):
 async def create_lead(data: LeadIn, user=Depends(get_current)):
     item = {"id": str(uuid.uuid4()), "tenant_id": user['tenant_id'], **data.model_dump(), "created_at": now_iso()}
     await db.leads.insert_one(item)
-    await log_activity(user['tenant_id'], 'crm', f"Nuevo lead: {data.name}")
+    label = data.title or data.contact_name or data.name or "Lead"
+    await log_activity(user['tenant_id'], 'crm', f"Nuevo lead: {label}")
     item.pop('_id', None)
     return item
+
+# ---- CRM Tasks (pipeline reminders + automations) ----
+@api.get("/crm/tasks")
+async def list_crm_tasks(user=Depends(get_current)):
+    items = await db.crm_tasks.find(t_filter(user), {"_id": 0}).sort("due_at", 1).to_list(1000)
+    return items
+
+@api.post("/crm/tasks")
+async def create_crm_task(data: CrmTaskIn, user=Depends(get_current)):
+    item = {"id": str(uuid.uuid4()), "tenant_id": user['tenant_id'], **data.model_dump(),
+            "completed_at": None, "created_at": now_iso()}
+    await db.crm_tasks.insert_one(item); item.pop('_id', None)
+    return item
+
+@api.post("/crm/tasks/bulk")
+async def create_crm_tasks_bulk(items: List[CrmTaskIn], user=Depends(get_current)):
+    docs = [{"id": str(uuid.uuid4()), "tenant_id": user['tenant_id'], **d.model_dump(),
+             "completed_at": None, "created_at": now_iso()} for d in items]
+    if docs:
+        await db.crm_tasks.insert_many([{**d} for d in docs])
+    return docs
+
+@api.patch("/crm/tasks/{tid}")
+async def update_crm_task(tid: str, data: Dict[str, Any], user=Depends(get_current)):
+    data.pop('id', None); data.pop('tenant_id', None)
+    await db.crm_tasks.update_one({"id": tid, "tenant_id": user['tenant_id']}, {"$set": data})
+    return {"ok": True}
+
+@api.delete("/crm/tasks/{tid}")
+async def delete_crm_task(tid: str, user=Depends(get_current)):
+    await db.crm_tasks.delete_one({"id": tid, "tenant_id": user['tenant_id']})
+    return {"ok": True}
 
 @api.patch("/crm/leads/{lead_id}")
 async def update_lead(lead_id: str, data: Dict[str, Any], user=Depends(get_current)):
@@ -993,15 +1049,15 @@ async def seed_tenant(tenant_id: str):
     # Tables
     for i in range(1, 9):
         await db.restaurant_tables.insert_one({"id": str(uuid.uuid4()), "tenant_id": tenant_id, "name": f"Mesa {i}", "capacity": 4 if i < 5 else 6, "created_at": now_iso()})
-    # Leads
+    # Leads (Travel CRM pipeline)
     leads_seed = [
-        {"name": "Acme Corp", "email": "contact@acme.com", "phone": "+1 555 010", "value": 8500, "stage": "Nuevo"},
-        {"name": "Globex Inc.", "email": "hello@globex.com", "phone": "+1 555 020", "value": 12000, "stage": "Contactado"},
-        {"name": "Soylent Co.", "email": "info@soylent.co", "phone": "+1 555 030", "value": 4200, "stage": "Calificado"},
-        {"name": "Initech LLC", "email": "ceo@initech.com", "phone": "+1 555 040", "value": 22000, "stage": "Ganado"},
+        {"title": "Luna de miel Maldivas", "contact_name": "María González", "contact_email": "maria@mail.com", "contact_phone": "+34 600 111", "stage": "lead", "estimated_value": 8500, "currency": "USD", "destination": "Maldivas", "pax": 2, "source": "Instagram"},
+        {"title": "Viaje familiar Disney", "contact_name": "Carlos Pérez", "contact_email": "carlos@mail.com", "contact_phone": "+34 600 222", "stage": "quote", "estimated_value": 12000, "currency": "USD", "destination": "Orlando", "pax": 4, "source": "Web"},
+        {"title": "Escapada París", "contact_name": "Sofía Ramírez", "contact_email": "sofia@mail.com", "contact_phone": "+34 600 333", "stage": "followup", "estimated_value": 4200, "currency": "USD", "destination": "París", "pax": 2, "source": "Referido"},
+        {"title": "Safari Kenia grupo", "contact_name": "Initech LLC", "contact_email": "ceo@initech.com", "contact_phone": "+34 600 444", "stage": "won", "estimated_value": 22000, "currency": "USD", "destination": "Kenia", "pax": 8, "source": "WhatsApp"},
     ]
-    for l in leads_seed:
-        await db.leads.insert_one({"id": str(uuid.uuid4()), "tenant_id": tenant_id, **l, "notes": "", "created_at": now_iso()})
+    for i, l in enumerate(leads_seed):
+        await db.leads.insert_one({"id": str(uuid.uuid4()), "tenant_id": tenant_id, **l, "position": i, "notes": "", "client_id": "", "created_at": now_iso()})
     # Bookings
     bookings_seed = [
         {"traveler": "María González", "destination": "Tokio, Japón", "start_date": "2026-03-12", "end_date": "2026-03-22", "amount": 3500, "status": "confirmed", "notes": "Hotel 5★"},

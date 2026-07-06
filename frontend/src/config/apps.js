@@ -33,7 +33,7 @@ export const APP_CATEGORIES = [
     accent: '#7C5CFF',
     apps: [
       { id: 'contacts', name: 'Contactos', en: 'Contacts', desc: { es: 'Clientes y proveedores unificados', en: 'Unified customers & vendors' }, Icon: UserCheck, status: 'live', route: '/app/contacts' },
-      { id: 'crm', name: 'CRM Travel', en: 'Travel CRM', desc: { es: 'Leads y clientes de tu agencia', en: 'Travel agency leads & clients' }, Icon: Users, status: 'live', route: '/app/travel' },
+      { id: 'crm', name: 'CRM Travel', en: 'Travel CRM', desc: { es: 'Pipeline, leads y tareas con IA', en: 'AI pipeline, leads & tasks' }, Icon: Users, status: 'live', route: '/app/crm' },
       { id: 'sales', name: 'Ventas', en: 'Sales', desc: { es: 'De cotizaciones a facturas', en: 'From quotes to invoices' }, Icon: FileText, status: 'soon' },
       { id: 'pos_restaurant', name: 'POS Restaurante', en: 'Restaurant POS', desc: { es: 'Mesas, comandas y cocina', en: 'Tables, orders, kitchen' }, Icon: UtensilsCrossed, status: 'live', route: '/app/restaurant' },
       { id: 'pos_retail', name: 'POS Retail', en: 'Retail POS', desc: { es: 'Caja para tiendas y comercios', en: 'Checkout for shops' }, Icon: ShoppingBag, status: 'live', route: '/app/retail' },

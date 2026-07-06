@@ -13,6 +13,7 @@ import TravelSignup from '@/pages/TravelSignup';
 import AuthCallback from '@/pages/AuthCallback';
 import Onboarding from '@/pages/Onboarding';
 import { CRM, PosRestaurant, PosRetail, Inventory } from '@/components/dashboard/Modules';
+import TravelCRM from '@/pages/TravelCRM';
 import { Contacts, Sales, Invoicing, Purchases } from '@/components/dashboard/BusinessModules';
 import { Warehouses, Accounting, Projects, Appointments, Maintenance } from '@/components/dashboard/OpsModules';
 import Nexus from '@/pages/Nexus';
@@ -37,7 +38,7 @@ function App() {
             <Route path="/app" element={<AppShell />}>
               <Route index element={<AppLauncher />} />
               <Route path="contacts" element={<Contacts />} />
-              <Route path="crm" element={<CRM />} />
+              <Route path="crm" element={<TravelCRM />} />
               <Route path="sales" element={<Sales />} />
               <Route path="invoicing" element={<Invoicing />} />
               <Route path="purchases" element={<Purchases />} />

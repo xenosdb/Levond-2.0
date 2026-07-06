@@ -54,6 +54,11 @@ export const crmApi = {
   create: (data) => client.post('/crm/leads', data).then((r) => r.data),
   update: (id, data) => client.patch(`/crm/leads/${id}`, data).then((r) => r.data),
   remove: (id) => client.delete(`/crm/leads/${id}`).then((r) => r.data),
+  tasks: () => client.get('/crm/tasks').then((r) => r.data),
+  createTask: (data) => client.post('/crm/tasks', data).then((r) => r.data),
+  createTasksBulk: (items) => client.post('/crm/tasks/bulk', items).then((r) => r.data),
+  updateTask: (id, data) => client.patch(`/crm/tasks/${id}`, data).then((r) => r.data),
+  removeTask: (id) => client.delete(`/crm/tasks/${id}`).then((r) => r.data),
 };
 
 // ---- Products ----
