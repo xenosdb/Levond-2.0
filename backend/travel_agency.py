@@ -115,6 +115,159 @@ def build_router(db, get_current, get_current_optional=None):
         await db.travel_proposals.delete_one({"id": pid, "tenant_id": user['tenant_id']})
         return {"ok": True}
 
+    # ---- Sales Intelligence: 360° signals + conversion probability + agent recs ----
+    def _days_until(date_str):
+        if not date_str: return None
+        try:
+            from datetime import datetime as _dt
+            return (_dt.strptime(str(date_str)[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc) - datetime.now(timezone.utc)).days
+        except Exception:
+            return None
+
+    def _days_until_bday(bd):
+        if not bd: return None
+        try:
+            from datetime import datetime as _dt
+            b = _dt.strptime(str(bd)[:10], "%Y-%m-%d"); t = datetime.now(timezone.utc).date()
+            nxt = b.replace(year=t.year).date()
+            if nxt < t: nxt = b.replace(year=t.year + 1).date()
+            return (nxt - t).days
+        except Exception:
+            return None
+
+    @router.get("/proposals/{pid}/intelligence")
+    async def proposal_intelligence(pid: str, user=Depends(get_current)):
+        tid = user['tenant_id']
+        prop = await db.travel_proposals.find_one({"id": pid, "tenant_id": tid}, {"_id": 0})
+        if not prop:
+            raise HTTPException(404, "Proposal not found")
+        name = prop.get("contact_name", "")
+        rx = {"$regex": f"^{name}$", "$options": "i"} if name else "__none__"
+        contact = None
+        if prop.get("contact_id"):
+            contact = await db.contacts.find_one({"id": prop["contact_id"], "tenant_id": tid}, {"_id": 0})
+        if not contact and name:
+            contact = await db.contacts.find_one({"tenant_id": tid, "name": rx}, {"_id": 0})
+        bookings = await db.travel_bookings.find({"tenant_id": tid, "traveler": rx}, {"_id": 0}).to_list(500)
+        proposals = await db.travel_proposals.find({"tenant_id": tid, "contact_name": rx}, {"_id": 0}).to_list(500)
+        interactions = await db.contact_interactions.find({"tenant_id": tid, "contact_id": (contact or {}).get("id", "__x")}, {"_id": 0}).sort("created_at", -1).to_list(50)
+
+        revenue = sum(float(b.get("amount", 0) or 0) for b in bookings)
+        n_bookings = len(bookings)
+        accepted = [p for p in proposals if p.get("status") in ("accepted", "booked")]
+        rejected = [p for p in proposals if p.get("status") == "rejected"]
+        dest_count = {}
+        for b in bookings:
+            d = (b.get("destination") or "").strip()
+            if d: dest_count[d] = dest_count.get(d, 0) + 1
+        fav_dest = sorted(dest_count.items(), key=lambda x: -x[1])
+        avg_budget = round(revenue / n_bookings, 0) if n_bookings else round(float(prop.get("total", 0) or 0), 0)
+        last_int = interactions[0]["created_at"] if interactions else None
+        pax = prop.get("travelers", 1)
+        vip = bool((contact or {}).get("vip")) or n_bookings >= 2 or revenue >= 5000
+        loyalty = "Platino" if revenue >= 15000 else "Oro" if revenue >= 5000 else "Plata" if n_bookings >= 1 else "Nuevo"
+
+        # ---- Deterministic conversion probability ----
+        score = 30
+        if n_bookings >= 1: score += 15
+        if n_bookings >= 3: score += 8
+        if vip: score += 10
+        if accepted: score += min(15, len(accepted) * 7)
+        if rejected: score -= min(15, len(rejected) * 8)
+        mk = float(prop.get("markup_pct", 0) or 0)
+        if mk <= 10: score += 10
+        elif mk <= 20: score += 4
+        else: score -= 5
+        di = _days_until(max((str(b.get("start_date") or "") for b in bookings), default="")) if bookings else None
+        if di is not None and di < -270: score -= 12          # inactive
+        if last_int is not None: score += 6                   # recent engagement
+        if prop.get("public_views", 0) > 0: score += 6        # opened the proposal
+        prob = max(5, min(97, round(score)))
+
+        # ---- Signals (360°) ----
+        signals = []
+        if n_bookings == 0: signals.append({"icon": "sparkle", "label": "Primera compra", "tone": "info"})
+        if vip: signals.append({"icon": "star", "label": "Cliente VIP", "tone": "gold"})
+        if n_bookings >= 2: signals.append({"icon": "repeat", "label": f"Cliente frecuente · {n_bookings} viajes", "tone": "purple"})
+        bd = _days_until_bday((contact or {}).get("birthday"))
+        if bd is not None and bd <= 30: signals.append({"icon": "cake", "label": f"Cumpleaños en {bd}d", "tone": "pink"})
+        pex = _days_until((contact or {}).get("passport_expiry"))
+        if pex is not None and pex <= 180: signals.append({"icon": "passport", "label": f"Pasaporte vence en {pex}d", "tone": "red" if pex <= 60 else "amber"})
+        vex = _days_until((contact or {}).get("visa_expiry"))
+        if vex is not None and vex <= 120: signals.append({"icon": "visa", "label": f"Visa vence en {vex}d", "tone": "red" if vex <= 45 else "amber"})
+        signals.append({"icon": "money", "label": f"Presupuesto promedio ${int(avg_budget):,}", "tone": "green"})
+        if fav_dest: signals.append({"icon": "map", "label": "Destinos favoritos: " + ", ".join(d for d, _ in fav_dest[:3]), "tone": "blue"})
+        signals.append({"icon": "loyalty", "label": f"Fidelidad: {loyalty}", "tone": "purple"})
+        if last_int: signals.append({"icon": "clock", "label": "Última interacción registrada", "tone": "gray"})
+
+        # ---- Consolidated agent recommendations (single voice = Azumi) ----
+        recs = []
+        for d, cnt in fav_dest:
+            if cnt >= 2:
+                near = {"Cancún": "Riviera Maya", "Miami": "Orlando", "Madrid": "Barcelona", "París": "Roma"}.get(d)
+                recs.append(f"Ha viajado a {d} {cnt} veces." + (f" Podría interesarle {near}." if near else " Ofrece un destino similar."))
+        if pax and pax >= 4:
+            recs.append(f"Viaja con {pax} personas. Recomiendo paquetes familiares y habitaciones conectadas.")
+        if vip:
+            recs.append("Cliente VIP con historial premium: alta probabilidad de aceptar un upgrade de hotel o categoría.")
+        if pex is not None and pex <= 180:
+            recs.append("Avisar sobre renovación de pasaporte antes de confirmar la venta.")
+        if bd is not None and bd <= 30:
+            recs.append("Cumpleaños próximo: añade un detalle de cortesía o descuento de fidelidad para cerrar.")
+        if mk > 20:
+            recs.append(f"El markup ({mk:.0f}%) es alto para este perfil; considera un descuento <10% para acelerar el cierre.")
+        if not recs:
+            recs.append("Perfil estándar. Refuerza el valor del itinerario y propone un próximo paso claro.")
+
+        # ---- Push an opportunity to the Intelligence Inbox (dedup per proposal) ----
+        try:
+            if prob >= 80 or vip:
+                exists = await db.intelligence.find_one({"tenant_id": tid, "dedup_key": f"proposal_hot:{pid}", "status": {"$in": ["new", "snoozed", "approved"]}})
+                if not exists:
+                    await db.intelligence.insert_one({
+                        "id": str(uuid.uuid4()), "tenant_id": tid, "day": datetime.now(timezone.utc).date().isoformat(),
+                        "agent": "SALES", "type": "opportunity", "priority": "high",
+                        "title": f"Alta probabilidad de cierre · {name} ({prob}%)",
+                        "message": f"Propuesta {prop.get('code','')} a {prop.get('destination','')}. {recs[0]}",
+                        "dedup_key": f"proposal_hot:{pid}",
+                        "actions": ["approve", "execute", "snooze", "dismiss", "automate"],
+                        "meta": {"proposal_id": pid, "contact_name": name}, "status": "new",
+                        "auto_suggest": False, "created_at": now_iso(),
+                    })
+        except Exception:
+            pass
+
+        return {
+            "contact_id": (contact or {}).get("id"),
+            "contact": contact,
+            "conversion_probability": prob,
+            "loyalty": loyalty,
+            "signals": signals,
+            "recommendations": recs,
+            "stats": {"revenue": round(revenue, 2), "bookings": n_bookings, "proposals": len(proposals),
+                      "accepted": len(accepted), "avg_budget": int(avg_budget)},
+        }
+
+    @router.post("/proposals/{pid}/accept")
+    async def accept_proposal(pid: str, user=Depends(get_current)):
+        """Advisor-side acceptance → creates a synced booking (Dashboard/Map/Calendar/CRM) + activity."""
+        tid = user['tenant_id']
+        p = await db.travel_proposals.find_one({"id": pid, "tenant_id": tid}, {"_id": 0})
+        if not p:
+            raise HTTPException(404, "Proposal not found")
+        booking = {
+            "id": str(uuid.uuid4()), "tenant_id": tid, "code": gen_code(),
+            "traveler": p.get("contact_name", ""), "destination": p.get("destination", ""),
+            "start_date": p.get("start_date", ""), "end_date": p.get("end_date", ""),
+            "amount": p.get("total", 0), "status": "confirmed", "pax": p.get("travelers", 1),
+            "origin": "Miami", "hotel": next((i["name"] for i in p.get("items", []) if i.get("kind") == "hotel"), ""),
+            "proposal_number": p.get("code", ""), "proposal_id": pid,
+            "currency": p.get("currency", "USD"), "created_at": now_iso(),
+        }
+        await db.travel_bookings.insert_one(booking); booking.pop("_id", None)
+        await db.travel_proposals.update_one({"id": pid, "tenant_id": tid}, {"$set": {"status": "booked", "booking_code": booking["code"], "accepted_at": now_iso()}})
+        return {"ok": True, "booking": booking}
+
     # ---- Public proposal viewer (no auth) ----
     @router.get("/public/{code}")
     async def public_view(code: str):
