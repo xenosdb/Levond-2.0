@@ -20,3 +20,11 @@
 - Mailbox, Call Center, Catálogo/Proveedores, Integraciones, Reportes, Uso, Marketing/Glitch Studio, Web Studio.
 - Clientes: ficha 360° del viajero (hoy usa Contacts existente).
 - Si el usuario comparte el screenshot del CRM original (tema oscuro), ajustar el CRM a ese look exacto.
+
+## Update (2026-07-06 #3) — Dashboard Operativo + ClientsWorldMap + Dark mode
+- Portado EXACTO desde el ZIP (Travel OS): `airportCoords.js` (coords + haversine/interpolate/bearing) y la lógica de fases del viaje (`lib/journey.js`: scheduled→pre_departure→outbound_flight→at_destination→return_flight→completed, progreso de vuelo, posiciones).
+- `ClientsWorldMap.jsx` (react-leaflet@5 + leaflet, instalados): mapa mundial estilo FlightRadar SIN APIs externas. Aviones rotados por bearing animándose cada 15s, avión en aeropuerto origen en pre_departure, rutas (sólidas en vuelo / punteadas), hoteles activos al llegar a destino, tooltips con cliente/pax/paquete/vuelo/fechas/días restantes.
+- `pages/Dashboard.jsx` = Centro de Operaciones (nuevo home `/app`): KPIs (viajes activos, en vuelo, en destino, facturación) + mapa + Calendario de reservas confirmadas (click → modal de detalle completo) + Actividad. TODO desde una sola fuente: `travel_bookings` → Reserva/CRM/Calendario/Dashboard/Mapa sincronizados.
+- Dark/Light: `ThemeContext` + botón "Modo oscuro/claro" en sidebar (tailwind darkMode:'class').
+- Backend: `BookingIn` extendido (pax, origin, hotel, departure_at, return_at, proposal_number); seed de 4 reservas con fechas relativas a "ahora" para demostrar fases en vivo. AppLauncher movido a `/app/apps`.
+- VERIFICADO runtime (headless chromium propio): Dashboard render, leaflet + 3 aviones, 4 reservas en calendario, modal de detalle abre, 0 errores de página.

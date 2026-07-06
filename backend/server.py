@@ -167,6 +167,12 @@ class BookingIn(BaseModel):
     amount: float = 0
     status: str = "pending"
     notes: Optional[str] = ""
+    pax: Optional[int] = 1
+    origin: Optional[str] = "Miami"
+    hotel: Optional[str] = ""
+    departure_at: Optional[str] = ""
+    return_at: Optional[str] = ""
+    proposal_number: Optional[str] = ""
 
 class ContactIn(BaseModel):
     name: str
@@ -1058,10 +1064,19 @@ async def seed_tenant(tenant_id: str):
     ]
     for i, l in enumerate(leads_seed):
         await db.leads.insert_one({"id": str(uuid.uuid4()), "tenant_id": tenant_id, **l, "position": i, "notes": "", "client_id": "", "created_at": now_iso()})
-    # Bookings
+    # Bookings (operational journeys — dates relative to now for a live map)
+    _now = datetime.now(timezone.utc)
+    def _d(days): return (_now + timedelta(days=days)).strftime("%Y-%m-%d")
+    def _dt(hours): return (_now + timedelta(hours=hours)).isoformat()
     bookings_seed = [
-        {"traveler": "María González", "destination": "Tokio, Japón", "start_date": "2026-03-12", "end_date": "2026-03-22", "amount": 3500, "status": "confirmed", "notes": "Hotel 5★"},
-        {"traveler": "Carlos Pérez", "destination": "París, Francia", "start_date": "2026-04-05", "end_date": "2026-04-10", "amount": 1800, "status": "pending", "notes": "City tour incluido"},
+        # In-flight right now (outbound): departed 1h ago
+        {"traveler": "María González", "destination": "Cancún", "origin": "Miami", "start_date": _d(0), "end_date": _d(6), "amount": 3500, "status": "confirmed", "pax": 2, "hotel": "Hotel Xcaret México", "departure_at": _dt(-1), "return_at": _dt(6*24), "proposal_number": "154", "notes": "Luna de miel"},
+        # Departing in ~1.5h (pre_departure) → plane at origin airport
+        {"traveler": "Carlos Pérez", "destination": "Punta Cana", "origin": "Bogotá", "start_date": _d(0), "end_date": _d(4), "amount": 2800, "status": "confirmed", "pax": 3, "hotel": "Hard Rock Hotel Punta Cana", "departure_at": _dt(1.5), "return_at": _dt(4*24), "proposal_number": "158", "notes": "Familia"},
+        # Currently at destination (hotel active), returns in 3 days
+        {"traveler": "Ana Torres", "destination": "Madrid", "origin": "Miami", "start_date": _d(-3), "end_date": _d(3), "amount": 5200, "status": "confirmed", "pax": 2, "hotel": "Hotel Riu Plaza España", "departure_at": _dt(-3*24), "return_at": _dt(3*24), "proposal_number": "149", "notes": "Aniversario"},
+        # Scheduled (future)
+        {"traveler": "Luis Ramírez", "destination": "Tokio", "origin": "Los Angeles", "start_date": _d(20), "end_date": _d(30), "amount": 8900, "status": "confirmed", "pax": 1, "hotel": "Park Hyatt Tokyo", "departure_at": _dt(20*24), "return_at": _dt(30*24), "proposal_number": "161", "notes": ""},
     ]
     for b in bookings_seed:
         await db.travel_bookings.insert_one({"id": str(uuid.uuid4()), "tenant_id": tenant_id, **b, "created_at": now_iso()})

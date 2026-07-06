@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, LogOut, ChevronDown, Clock, Check, Settings } from 'lucide-react';
+import { LayoutDashboard, LogOut, ChevronDown, Clock, Check, Settings, Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { APP_CATEGORIES } from '@/config/apps';
 
 const Sidebar = () => {
   const { lang } = useLanguage();
   const { user, tenant, logout } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
   const L = (obj) => obj[lang] || obj.es || obj.en;
 
   const [openCats, setOpenCats] = useState(() => {
@@ -129,6 +131,13 @@ const Sidebar = () => {
             <div className="text-[11px] text-[#8A8A9E] truncate">{user?.email || ''}</div>
           </div>
         </div>
+        <button
+          onClick={toggleTheme} data-testid="theme-toggle"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold mb-1 text-[#5F5F6B] hover:bg-[#7C5CFF]/8 hover:text-[#0F0F13] transition-all"
+        >
+          {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+          {theme === 'dark' ? (lang === 'en' ? 'Light mode' : 'Modo claro') : (lang === 'en' ? 'Dark mode' : 'Modo oscuro')}
+        </button>
         <NavLink
           to="/app/settings" data-testid="sidebar-link-settings"
           className={({ isActive }) =>
