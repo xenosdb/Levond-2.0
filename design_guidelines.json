@@ -1,0 +1,148 @@
+{
+  "project_context": {
+    "brand_name": "LEVOND",
+    "domain": "AI-Powered ERP-CRM Ecosystem",
+    "theme": "light",
+    "archetype": "3 (Pastel & Soft) elevated to Premium SaaS Luxury",
+    "target_audience": "Modern enterprises, restaurants, retail, travel agencies, and service businesses.",
+    "core_aesthetic": "Glassmorphism 2.0 (tactile depth, diffused blur), clarity-led minimalism, soft white base with vibrant lavender/purple gradients, floating rounded cards.",
+    "anti_patterns": [
+      "No 'Inter' or generic fonts.",
+      "No flat, sterile white layouts without texture or gradient blooms.",
+      "No AI human avatars (use abstract orbs/geometry).",
+      "No generic 3-column bootstrap layouts. Use asymmetric bento grids.",
+      "No emoji usage (use Lucide/Phosphor icons)."
+    ]
+  },
+  "typography": {
+    "strategy": "Swiss Brutalist meets Soft Utility",
+    "heading_font": "Cabinet Grotesk",
+    "body_font": "Manrope",
+    "mono_font": "JetBrains Mono",
+    "scales": {
+      "h1": "text-5xl sm:text-6xl tracking-tighter leading-tight font-black",
+      "h2": "text-4xl sm:text-5xl tracking-tight leading-tight font-extrabold",
+      "h3": "text-2xl sm:text-3xl tracking-tight leading-snug font-bold",
+      "h4": "text-xl font-bold tracking-tight",
+      "body": "text-base sm:text-lg leading-relaxed font-medium",
+      "small": "text-sm uppercase tracking-[0.2em] font-bold"
+    }
+  },
+  "colors": {
+    "background": {
+      "base": "#FAFAFC",
+      "gradient_blooms": ["#7C5CFF20", "#FFB04210", "#FFFFFF"]
+    },
+    "surface": {
+      "card_glass": "rgba(255, 255, 255, 0.7)",
+      "card_solid": "#FFFFFF",
+      "sidebar": "#F3F3F8"
+    },
+    "brand": {
+      "primary": "#7C5CFF",
+      "primary_hover": "#6A4BE5",
+      "accent": "#FFB042",
+      "accent_hover": "#F09C2E"
+    },
+    "text": {
+      "primary": "#0F0F13",
+      "secondary": "#5F5F6B",
+      "tertiary": "#8A8A9E",
+      "on_primary": "#FFFFFF"
+    },
+    "borders": {
+      "subtle": "rgba(124, 92, 255, 0.12)",
+      "glass": "rgba(255, 255, 255, 0.8)",
+      "strong": "rgba(124, 92, 255, 0.3)"
+    }
+  },
+  "spacing_and_layout": {
+    "container": "max-w-7xl mx-auto px-6 lg:px-8",
+    "section_gap": "py-24 sm:py-32",
+    "bento_gap": "gap-6 md:gap-8",
+    "card_padding": "p-8 md:p-12",
+    "border_radius": {
+      "card": "rounded-[2rem]",
+      "button": "rounded-full",
+      "input": "rounded-xl"
+    }
+  },
+  "components": {
+    "glass_card": {
+      "classes": "bg-white/70 backdrop-blur-2xl backdrop-saturate-150 border border-white/60 shadow-[0_8px_32px_rgba(124,92,255,0.06)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)] rounded-[2rem] overflow-hidden"
+    },
+    "solid_card": {
+      "classes": "bg-white border border-[#7C5CFF]/10 shadow-sm rounded-[2rem] p-8 hover:-translate-y-1 transition-all duration-300"
+    },
+    "button_primary": {
+      "classes": "bg-[#7C5CFF] text-white rounded-full px-8 py-4 font-bold tracking-wide hover:bg-[#6A4BE5] hover:shadow-[0_0_24px_rgba(124,92,255,0.4)] transition-all duration-300"
+    },
+    "button_secondary": {
+      "classes": "bg-white/50 backdrop-blur-md border border-[#7C5CFF]/20 text-[#0F0F13] rounded-full px-8 py-4 font-bold tracking-wide hover:bg-white hover:border-[#7C5CFF]/40 transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+    },
+    "tracing_beam_card": {
+      "description": "Used for the AI Assistant and Automation showcase to signal 'Active/Alive' tech.",
+      "implementation": "Use Framer Motion to animate a glowing border around the glass_card.",
+      "glow_color": "#FFB042"
+    }
+  },
+  "layouts": {
+    "hero": {
+      "style": "Asymmetric Split",
+      "left": "Massive H1 (Cabinet Grotesk), Warm Amber primary CTA, sub-text.",
+      "right": "Floating glass command center mockup layered over an abstract pulsating purple geometric 3D orb. NO human face.",
+      "background": "White base with a slow-moving, heavy blurred, radial background blob of #7C5CFF (opacity 20%)."
+    },
+    "marquee": {
+      "style": "The Editorial Ribbon",
+      "implementation": "Slow drifting horizontal ribbon showcasing 12 languages (flags + names) and client types. Extremely generous spacing."
+    },
+    "modules_bento": {
+      "style": "The Tetris Grid",
+      "structure": "grid-cols-1 md:grid-cols-12 gap-8",
+      "items": "CRM (span 8), Web Studio (span 4), POS Restaurant (span 6), POS Retail (span 6), Travel (span 4), Inventory (span 8). Use varied heights and inner padding."
+    },
+    "footer": {
+      "style": "Massive Typography",
+      "background": "#0F0F13",
+      "text": "#FAFAFC",
+      "cta": "Huge 'LEVOND' text at 10vw for a premium tech feel."
+    }
+  },
+  "media": {
+    "hero_abstract": [
+      {
+        "url": "https://images.unsplash.com/photo-1670189577367-2c6ef31a4b8c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMHB1cnBsZSUyMGdlb21ldHJpYyUyMDNkfGVufDB8fHx8MTc4MjgxNDQ1MHww&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract purple geometric 3D knot for AI representation",
+        "category": "hero_orb"
+      }
+    ],
+    "modules": [
+      {
+        "url": "https://images.unsplash.com/photo-1613274554329-70f997f5789f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODR8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBtaW5pbWFsJTIwcmVzdGF1cmFudCUyMGludGVyaW9yfGVufDB8fHx8MTc4MjgxNDQ1MHww&ixlib=rb-4.1.0&q=85",
+        "description": "Modern minimal restaurant interior",
+        "category": "pos_restaurant"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1556742111-a301076d9d18?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwxfHxjbGVhbiUyMHJldGFpbCUyMHN0b3JlJTIwY2hlY2tvdXR8ZW58MHx8fHwxNzgyODE0NDUwfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Clean retail store checkout",
+        "category": "pos_retail"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1758691736975-9f7f643d178e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwyfHxkaXZlcnNlJTIwYnVzaW5lc3MlMjB0ZWFtJTIwbW9kZXJuJTIwb2ZmaWNlfGVufDB8fHx8MTc4MjgxNDQ1MHww&ixlib=rb-4.1.0&q=85",
+        "description": "Diverse professional team in modern office",
+        "category": "crm_team"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Create the landing page using plain React components (.js/.jsx) with Tailwind CSS. DO NOT use TypeScript (.tsx).",
+    "All interactive elements (buttons, inputs, language switchers, links) MUST have a `data-testid` attribute (e.g., `data-testid='hero-cta-button'`).",
+    "Do NOT use HTML `<select>` or native `date`. Use custom UI implementations or well-styled Tailwind alternatives that mimic Shadcn behavior.",
+    "Implement Framer Motion for scroll reveals, floating cards, and the abstract AI orb animation.",
+    "Do not include any human face or Avatar for the AI assistant. Use the provided abstract 3D orb image.",
+    "Ensure the hero header is sticky with `backdrop-blur-xl bg-white/70`, contains the 12-language switcher, and prominent 'Probar gratis' CTA.",
+    "Use Lucide-React for all iconography. Emojis are forbidden.",
+    "Strictly follow the color palette. Do not invent new gradients. Use the defined Primary (#7C5CFF) and Accent (#FFB042) intentionally."
+  ]
+}
