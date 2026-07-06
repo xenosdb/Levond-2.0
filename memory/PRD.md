@@ -28,3 +28,18 @@
 - Dark/Light: `ThemeContext` + botón "Modo oscuro/claro" en sidebar (tailwind darkMode:'class').
 - Backend: `BookingIn` extendido (pax, origin, hotel, departure_at, return_at, proposal_number); seed de 4 reservas con fechas relativas a "ahora" para demostrar fases en vivo. AppLauncher movido a `/app/apps`.
 - VERIFICADO runtime (headless chromium propio): Dashboard render, leaflet + 3 aviones, 4 reservas en calendario, modal de detalle abre, 0 errores de página.
+
+## Update (2026-07-06 #4) — AI Intelligence Inbox (Bandeja de Inteligencia)
+- NUEVO módulo backend `intelligence.py` (patrón build_router, reutiliza scheduler + identidades de agentes existentes). Colecciones: `intelligence`, `intelligence_learning`, `intelligence_automations`, `contact_interactions`.
+- Agentes especializados con dominios propios: Travel AI, Marketing AI, Finance AI, Sales AI, Ops AI, Azumi. Detectores proactivos: cumpleaños, vencimiento pasaporte/visa, clientes VIP, inactivos (>9m), clusters de interés por destino, facturas vencidas, leads estancados.
+- Clasificación + prioridad (critical→high→medium→low→info, críticas primero). Acciones rápidas: Aprobar/Ejecutar/Posponer/Delegar/Ignorar/Automatizar. Aprendizaje: cuenta aprobaciones por tipo y tras 3 sugiere convertir en automatización permanente (registro en intelligence_automations).
+- Corre en el scheduler proactivo (cada 2h) y en el seed de cada workspace nuevo. Endpoints: GET/POST /api/intelligence, /scan, /{id}/action, /automations.
+- Ficha 360° (backend listo): `GET /api/contacts/{id}/360` (timeline + historial comercial: bookings/leads/invoices + interacciones), `POST /api/contacts/{id}/interactions`. `ContactIn` extendido (birthday, passport/visa + expiry, vip, country, documents, tags). Seed de contactos con datos de viajero.
+- Frontend: `IntelligenceInbox.jsx` (badges de agente, prioridad, acciones, toast de aprendizaje) integrado en Dashboard (compact, arriba = pantalla principal) + página dedicada `/app/intelligence`. Sidebar "Bandeja de Inteligencia" e "Insights" → live.
+- VERIFICADO runtime (headless): 7 recomendaciones (2 críticas), filtros, aprobar+toast, página dedicada, 0 errores.
+
+### Pendiente (backlog IA/CRM — próximas iteraciones)
+- UI de Ficha 360° del cliente (backend ya está listo) con botón editar + documentos.
+- Azumi como operador del CRM vía function-calling ejecutable (crear/editar contacto, oportunidad, reserva) — ya existe base en nexus_kb.try_execute_action; ampliar acciones y UI de confirmación.
+- Colaboración multi-agente que consolide varias señales en una sola recomendación.
+- Gestión de usuarios/roles/permisos granulares + Dashboard adaptado por permisos (invitar por email, activar/desactivar, reset password, departamentos/cargos, roles personalizados).

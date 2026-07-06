@@ -15,6 +15,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
 from nexus_agents import build_router as build_nexus_router
 from travel_agency import build_router as build_travel_router, seed_travel
+from intelligence import build_router as build_intelligence_router, run_scan as run_intel_scan
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -183,6 +184,17 @@ class ContactIn(BaseModel):
     is_customer: bool = True
     is_vendor: bool = False
     notes: Optional[str] = ""
+    # 360° traveler profile
+    company: Optional[str] = ""
+    country: Optional[str] = ""
+    birthday: Optional[str] = ""          # YYYY-MM-DD
+    passport_number: Optional[str] = ""
+    passport_expiry: Optional[str] = ""   # YYYY-MM-DD
+    visa_number: Optional[str] = ""
+    visa_expiry: Optional[str] = ""       # YYYY-MM-DD
+    vip: Optional[bool] = False
+    documents: Optional[List[Dict[str, Any]]] = []   # [{name,url,type,expiry}]
+    tags: Optional[List[str]] = []
 
 class SalesItemIn(BaseModel):
     product_id: Optional[str] = ""
@@ -709,6 +721,57 @@ async def delete_contact(cid: str, user=Depends(get_current)):
     await db.contacts.delete_one({"id": cid, "tenant_id": user['tenant_id']})
     return {"ok": True}
 
+# ---- Client 360° view (timeline + commercial history + interactions) ----
+class InteractionIn(BaseModel):
+    kind: str = "note"   # note | call | meeting | task | comment
+    text: str
+    due_at: Optional[str] = ""
+
+@api.get("/contacts/{cid}/360")
+async def contact_360(cid: str, user=Depends(get_current)):
+    tid = user['tenant_id']
+    contact = await db.contacts.find_one({"id": cid, "tenant_id": tid}, {"_id": 0})
+    if not contact:
+        raise HTTPException(404, "Contact not found")
+    name = contact.get("name", "")
+    # Match related records by name (best-effort, single data source)
+    rx = {"$regex": f"^{name}$", "$options": "i"} if name else "__none__"
+    bookings = await db.travel_bookings.find({"tenant_id": tid, "traveler": rx}, {"_id": 0}).to_list(500)
+    leads = await db.leads.find({"tenant_id": tid, "contact_name": rx}, {"_id": 0}).to_list(500)
+    invoices = await db.invoices.find({"tenant_id": tid, "contact_name": rx}, {"_id": 0}).to_list(500)
+    interactions = await db.contact_interactions.find({"tenant_id": tid, "contact_id": cid}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    # Commercial stats
+    revenue = sum(float(b.get("amount", 0) or 0) for b in bookings)
+    destinations = sorted({b.get("destination", "") for b in bookings if b.get("destination")})
+    cancelled = [b for b in bookings if b.get("status") == "cancelled"]
+    # Timeline (merged, chronological)
+    tl = []
+    tl.append({"ts": contact.get("created_at", ""), "type": "created", "label": "Contacto creado"})
+    for l in leads:
+        tl.append({"ts": l.get("created_at", ""), "type": "lead", "label": f"Propuesta/Lead: {l.get('title') or l.get('destination','')}", "amount": l.get("estimated_value", 0)})
+    for b in bookings:
+        tl.append({"ts": b.get("created_at", b.get("start_date", "")), "type": "booking", "label": f"Reserva: {b.get('destination','')}", "amount": b.get("amount", 0), "status": b.get("status")})
+    for i in invoices:
+        tl.append({"ts": i.get("created_at", ""), "type": "invoice", "label": f"Factura {i.get('number','')}", "amount": i.get("total", 0), "status": i.get("status")})
+    for it in interactions:
+        tl.append({"ts": it.get("created_at", ""), "type": it.get("kind", "note"), "label": it.get("text", "")})
+    tl = [x for x in tl if x.get("ts")]
+    tl.sort(key=lambda x: x["ts"])
+    return {
+        "contact": contact,
+        "stats": {"revenue": round(revenue, 2), "bookings": len(bookings), "cancelled": len(cancelled),
+                  "proposals": len(leads), "destinations": destinations},
+        "bookings": bookings, "leads": leads, "invoices": invoices,
+        "interactions": interactions, "timeline": tl,
+    }
+
+@api.post("/contacts/{cid}/interactions")
+async def add_interaction(cid: str, data: InteractionIn, user=Depends(get_current)):
+    item = {"id": str(uuid.uuid4()), "tenant_id": user['tenant_id'], "contact_id": cid,
+            **data.model_dump(), "author": user.get("name", ""), "created_at": now_iso()}
+    await db.contact_interactions.insert_one(item); item.pop('_id', None)
+    return item
+
 # ---- Sales orders → Invoices ----
 async def _next_seq(tenant_id: str, key: str) -> int:
     doc = await db.counters.find_one_and_update(
@@ -1080,12 +1143,18 @@ async def seed_tenant(tenant_id: str):
     ]
     for b in bookings_seed:
         await db.travel_bookings.insert_one({"id": str(uuid.uuid4()), "tenant_id": tenant_id, **b, "created_at": now_iso()})
-    # Contacts seed (unified customers + vendors)
+    # Contacts seed (travel clients with 360° data → drives Intelligence Inbox)
+    _bd = lambda days: (datetime.now(timezone.utc) + timedelta(days=days)).strftime("%Y-%m-%d")
     contacts_seed = [
-        {"name": "Acme Corp", "email": "billing@acme.com", "phone": "+1 555 1010", "address": "123 Main St, NY", "tax_id": "US-88-1234567", "is_customer": True, "is_vendor": False},
-        {"name": "Globex Inc.", "email": "ap@globex.com", "phone": "+1 555 2020", "address": "500 Ocean Ave, LA", "tax_id": "US-77-7654321", "is_customer": True, "is_vendor": False},
-        {"name": "Proveedor Alfa S.L.", "email": "ventas@alfa.es", "phone": "+34 91 111 2233", "address": "Calle Mayor 1, Madrid", "tax_id": "ES-B12345678", "is_customer": False, "is_vendor": True},
-        {"name": "Distribuidora Beta", "email": "pedidos@beta.co", "phone": "+52 55 5555 6666", "address": "Reforma 100, CDMX", "tax_id": "MX-BETA980101", "is_customer": True, "is_vendor": True},
+        {"name": "María González", "email": "maria@mail.com", "phone": "+34 600 111", "address": "Madrid, España", "country": "España", "is_customer": True, "is_vendor": False,
+         "birthday": _bd(6), "passport_number": "ESP-8842019", "passport_expiry": _bd(50), "vip": True, "company": ""},
+        {"name": "Carlos Pérez", "email": "carlos@mail.com", "phone": "+57 300 222", "address": "Bogotá, Colombia", "country": "Colombia", "is_customer": True, "is_vendor": False,
+         "birthday": _bd(8), "passport_number": "COL-1120345", "passport_expiry": _bd(400), "visa_expiry": _bd(35), "vip": False, "company": ""},
+        {"name": "Ana Torres", "email": "ana@mail.com", "phone": "+1 305 333", "address": "Miami, USA", "country": "USA", "is_customer": True, "is_vendor": False,
+         "birthday": _bd(120), "passport_number": "USA-556677", "passport_expiry": _bd(900), "vip": True, "company": ""},
+        {"name": "Sofía Ramírez", "email": "sofia@mail.com", "phone": "+34 600 333", "address": "Barcelona, España", "country": "España", "is_customer": True, "is_vendor": False,
+         "birthday": _bd(200), "passport_expiry": _bd(700), "vip": False, "company": ""},
+        {"name": "Proveedor Alfa S.L.", "email": "ventas@alfa.es", "phone": "+34 91 111 2233", "address": "Calle Mayor 1, Madrid", "tax_id": "ES-B12345678", "is_customer": False, "is_vendor": True, "country": "España"},
     ]
     for c in contacts_seed:
         await db.contacts.insert_one({"id": str(uuid.uuid4()), "tenant_id": tenant_id, **c, "notes": "", "created_at": now_iso()})
@@ -1128,6 +1197,11 @@ async def seed_tenant(tenant_id: str):
     except Exception as ex:
         logging.warning(f"seed_travel failed: {ex}")
     await log_activity(tenant_id, "system", "Workspace inicializado con datos demo")
+    # Initial Intelligence Inbox scan (specialized agents observe the new workspace)
+    try:
+        await run_intel_scan(db, tenant_id)
+    except Exception as ex:
+        logging.warning(f"intel scan failed: {ex}")
     # Auto-invoice trigger memo (accounting integration hint)
     await db.nexus_activities.insert_one({
         "id": str(uuid.uuid4()), "tenant_id": tenant_id,
@@ -1140,6 +1214,7 @@ async def seed_tenant(tenant_id: str):
 app.include_router(api)
 app.include_router(build_nexus_router(db, get_current))
 app.include_router(build_travel_router(db, get_current))
+app.include_router(build_intelligence_router(db, get_current))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -1194,6 +1269,11 @@ async def _proactive_job():
                                   "action": "review_pipeline", "created_at": now_iso_str, "dismissed": False})
             if new_items:
                 await db.nexus_activities.insert_many(new_items)
+            # Intelligence Inbox: run specialized-agent scan for this tenant
+            try:
+                await run_intel_scan(db, tid)
+            except Exception as ie:
+                logging.warning(f"intel scan (job) failed for {tid}: {ie}")
     except Exception as e:
         logging.warning(f"Proactive job failed: {e}")
 

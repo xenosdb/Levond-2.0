@@ -10,6 +10,7 @@ import Signup from '@/pages/Signup';
 import AppShell from '@/pages/AppShell';
 import AppLauncher from '@/components/dashboard/AppLauncher';
 import Dashboard from '@/pages/Dashboard';
+import IntelligencePage from '@/pages/IntelligencePage';
 import Travel from '@/pages/Travel';
 import TravelSignup from '@/pages/TravelSignup';
 import AuthCallback from '@/pages/AuthCallback';
@@ -42,6 +43,7 @@ function App() {
               <Route path="apps" element={<AppLauncher />} />
               <Route path="contacts" element={<Contacts />} />
               <Route path="crm" element={<TravelCRM />} />
+              <Route path="intelligence" element={<IntelligencePage />} />
               <Route path="travel" element={<TravelAgency />} />
               <Route path="nexus" element={<Nexus />} />
               <Route path="settings" element={<Settings />} />

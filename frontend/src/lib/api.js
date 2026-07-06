@@ -90,6 +90,17 @@ export const contactsApi = {
   create: (data) => client.post('/contacts', data).then((r) => r.data),
   update: (id, data) => client.patch(`/contacts/${id}`, data).then((r) => r.data),
   remove: (id) => client.delete(`/contacts/${id}`).then((r) => r.data),
+  get360: (id) => client.get(`/contacts/${id}/360`).then((r) => r.data),
+  addInteraction: (id, data) => client.post(`/contacts/${id}/interactions`, data).then((r) => r.data),
+};
+
+// ---- AI Intelligence Inbox ----
+export const intelligenceApi = {
+  list: (status = 'active') => client.get('/intelligence', { params: { status } }).then((r) => r.data),
+  scan: () => client.post('/intelligence/scan').then((r) => r.data),
+  act: (id, action) => client.post(`/intelligence/${id}/action`, { action }).then((r) => r.data),
+  automations: () => client.get('/intelligence/automations').then((r) => r.data),
+  removeAutomation: (type) => client.delete(`/intelligence/automations/${type}`).then((r) => r.data),
 };
 
 // ---- Sales ----

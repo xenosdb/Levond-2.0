@@ -15,8 +15,8 @@ export const APP_CATEGORIES = [
     accent: '#7C3AED',
     apps: [
       { id: 'azumi', name: 'Azumi AI', en: 'Azumi AI', desc: { es: 'Copiloto IA de tu agencia', en: 'AI copilot for your agency' }, Icon: Brain, status: 'live', route: '/app/nexus' },
-      { id: 'intelligence', name: 'Hub Analítico', en: 'Analytics Hub', desc: { es: 'Análisis de negocio con IA', en: 'AI business analytics' }, Icon: Activity, status: 'soon' },
-      { id: 'insights', name: 'Insights', en: 'Insights', desc: { es: 'Sugerencias proactivas de Azumi', en: 'Proactive Azumi insights' }, Icon: Sparkles, status: 'soon' },
+      { id: 'intelligence', name: 'Bandeja de Inteligencia', en: 'Intelligence Inbox', desc: { es: 'Centro de inteligencia de todos los agentes', en: 'All-agents intelligence center' }, Icon: Activity, status: 'live', route: '/app/intelligence' },
+      { id: 'insights', name: 'Insights', en: 'Insights', desc: { es: 'Sugerencias proactivas de Azumi', en: 'Proactive Azumi insights' }, Icon: Sparkles, status: 'live', route: '/app/intelligence' },
     ],
   },
   {

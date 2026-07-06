@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { travelApi, dashApi } from '@/lib/api';
 import ClientsWorldMap, { JourneyStats } from '@/components/dashboard/ClientsWorldMap';
+import IntelligenceInbox from '@/components/dashboard/IntelligenceInbox';
 import { buildJourneys, PHASE_LABEL, PHASE_COLOR } from '@/lib/journey';
 
 const HEADING = "'Playfair Display', ui-serif, Georgia, serif";
@@ -58,6 +59,9 @@ export default function Dashboard() {
         </h1>
         <p className="text-[#5F5F6B] dark:text-white/50 mt-1">Centro de Operaciones · {tenant?.name} — todo sincronizado en tiempo real</p>
       </div>
+
+      {/* AI Intelligence Inbox — el centro del AI Operating System */}
+      <IntelligenceInbox compact />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
