@@ -33,7 +33,7 @@ const Sidebar = () => {
           </div>
           <div>
             <div className="font-display font-black text-lg tracking-tight text-[#0F0F13] leading-none">LEVOND</div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8A8A9E] mt-1">Command Center</div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8A8A9E] mt-1">Travel OS</div>
           </div>
         </NavLink>
 
@@ -88,33 +88,22 @@ const Sidebar = () => {
                 <div className="mt-0.5 space-y-0.5">
                   {cat.apps.map((app) => {
                     const isLive = app.status === 'live' || app.status === 'partial';
-                    const routeTo = app.route || '#';
+                    const routeTo = app.route || `/app/${app.id}`;
                     const content = (
                       <>
-                        <app.Icon className="w-4 h-4" strokeWidth={2.2} style={isLive ? {} : { opacity: 0.4 }} />
+                        <app.Icon className="w-4 h-4" strokeWidth={2.2} style={isLive ? {} : { opacity: 0.5 }} />
                         <span className="flex-1 truncate">{lang === 'en' ? app.en : app.name}</span>
                         {app.status === 'soon' && <Clock className="w-3 h-3 text-[#8A8A9E]" />}
                         {app.status === 'live' && <Check className="w-3 h-3 text-emerald-500" strokeWidth={3} />}
                       </>
                     );
-                    if (!isLive) {
-                      return (
-                        <div
-                          key={app.id} data-testid={`sidebar-app-${app.id}`}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-[#8A8A9E] cursor-not-allowed"
-                          title="Próximamente"
-                        >
-                          {content}
-                        </div>
-                      );
-                    }
                     return (
                       <NavLink
                         key={app.id} to={routeTo}
                         data-testid={`sidebar-app-${app.id}`}
                         className={({ isActive }) =>
                           `flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
-                            isActive ? 'bg-[#7C5CFF]/10 text-[#7C5CFF]' : 'text-[#0F0F13] hover:bg-[#7C5CFF]/8'
+                            isActive ? 'bg-[#7C5CFF]/10 text-[#7C5CFF]' : (isLive ? 'text-[#0F0F13] hover:bg-[#7C5CFF]/8' : 'text-[#8A8A9E] hover:bg-black/5')
                           }`
                         }
                       >

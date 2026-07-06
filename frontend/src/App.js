@@ -12,13 +12,12 @@ import Travel from '@/pages/Travel';
 import TravelSignup from '@/pages/TravelSignup';
 import AuthCallback from '@/pages/AuthCallback';
 import Onboarding from '@/pages/Onboarding';
-import { CRM, PosRestaurant, PosRetail, Inventory } from '@/components/dashboard/Modules';
 import TravelCRM from '@/pages/TravelCRM';
-import { Contacts, Sales, Invoicing, Purchases } from '@/components/dashboard/BusinessModules';
-import { Warehouses, Accounting, Projects, Appointments, Maintenance } from '@/components/dashboard/OpsModules';
+import { Contacts } from '@/components/dashboard/BusinessModules';
 import Nexus from '@/pages/Nexus';
 import TravelAgency from '@/pages/TravelAgency';
 import Settings from '@/pages/Settings';
+import ComingSoon from '@/pages/ComingSoon';
 import PublicProposal from '@/pages/PublicProposal';
 
 function App() {
@@ -39,20 +38,10 @@ function App() {
               <Route index element={<AppLauncher />} />
               <Route path="contacts" element={<Contacts />} />
               <Route path="crm" element={<TravelCRM />} />
-              <Route path="sales" element={<Sales />} />
-              <Route path="invoicing" element={<Invoicing />} />
-              <Route path="purchases" element={<Purchases />} />
-              <Route path="restaurant" element={<PosRestaurant />} />
-              <Route path="retail" element={<PosRetail />} />
-              <Route path="inventory" element={<Inventory />} />
-              <Route path="warehouses" element={<Warehouses />} />
-              <Route path="accounting" element={<Accounting />} />
-              <Route path="projects" element={<Projects />} />
-              <Route path="appointments" element={<Appointments />} />
-              <Route path="maintenance" element={<Maintenance />} />
               <Route path="travel" element={<TravelAgency />} />
               <Route path="nexus" element={<Nexus />} />
               <Route path="settings" element={<Settings />} />
+              <Route path=":module" element={<ComingSoon />} />
             </Route>
           </Routes>
         </BrowserRouter>
