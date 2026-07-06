@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Search, Check, X, FileText, Printer, ArrowRight,
   UserRound, Building2, Mail, Phone, Send, Package as PackageIcon
 } from 'lucide-react';
 import Topbar from '@/components/dashboard/Topbar';
 import { useLanguage } from '@/contexts/LanguageContext';
+import Client360 from '@/components/dashboard/Client360';
 import { contactsApi, salesApi, invoicesApi, purchasesApi, productsApi } from '@/lib/api';
 
 // ---- Shared UI ----
@@ -51,6 +52,7 @@ export const Contacts = () => {
   const [filter, setFilter] = useState('all'); // all | customer | vendor
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', tax_id: '', is_customer: true, is_vendor: false, notes: '' });
 
   const refresh = () => contactsApi.list().then(setContacts);
@@ -95,13 +97,15 @@ export const Contacts = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {filtered.map((c) => (
           <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -3 }}
+            onClick={() => setSelected(c.id)}
             data-testid={`contact-card-${c.id}`}
-            className="glass-card rounded-2xl p-5 hover:shadow-[0_12px_32px_rgba(124,92,255,0.10)] transition-all group">
+            className="glass-card rounded-2xl p-5 hover:shadow-[0_12px_32px_rgba(124,92,255,0.10)] transition-all group cursor-pointer">
             <div className="flex items-start justify-between mb-3">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#7C5CFF] to-[#FFB042] flex items-center justify-center text-white font-display font-black">
                 {c.name?.[0]?.toUpperCase()}
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 items-center">
+                {c.vip && <Badge color="amber">VIP</Badge>}
                 {c.is_customer && <Badge color="green">{T.c}</Badge>}
                 {c.is_vendor && <Badge color="amber">{T.v}</Badge>}
               </div>
@@ -110,9 +114,12 @@ export const Contacts = () => {
             <div className="mt-1.5 space-y-0.5 text-xs text-[#5F5F6B]">
               {c.email && <div className="flex items-center gap-1.5 truncate"><Mail className="w-3 h-3" />{c.email}</div>}
               {c.phone && <div className="flex items-center gap-1.5 truncate"><Phone className="w-3 h-3" />{c.phone}</div>}
-              {c.tax_id && <div className="font-mono text-[10px] text-[#8A8A9E] mt-1">{c.tax_id}</div>}
+              {c.country && <div className="text-[10px] text-[#8A8A9E] mt-1">{c.country}</div>}
             </div>
-            <button onClick={() => contactsApi.remove(c.id).then(refresh)} data-testid={`contact-del-${c.id}`} className="mt-3 opacity-0 group-hover:opacity-100 text-red-500 text-xs transition-opacity"><Trash2 className="w-3.5 h-3.5" /></button>
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-[11px] font-bold text-[#7C5CFF] opacity-0 group-hover:opacity-100 transition-opacity">Ver ficha 360° →</span>
+              <button onClick={(e) => { e.stopPropagation(); contactsApi.remove(c.id).then(refresh); }} data-testid={`contact-del-${c.id}`} className="opacity-0 group-hover:opacity-100 text-red-500 text-xs transition-opacity"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
           </motion.div>
         ))}
         {filtered.length === 0 && <div className="col-span-full text-center py-16 text-[#8A8A9E]">{lang === 'en' ? 'No contacts' : 'Sin contactos'}</div>}
@@ -136,6 +143,10 @@ export const Contacts = () => {
           <button type="submit" data-testid="contact-form-submit" className="w-full bg-[#7C5CFF] hover:bg-[#6A4BE5] text-white font-bold py-3 rounded-full text-sm mt-2">{lang === 'en' ? 'Save' : 'Guardar'}</button>
         </form>
       </Modal>
+
+      <AnimatePresence>
+        {selected && <Client360 contactId={selected} onClose={() => setSelected(null)} onUpdated={refresh} />}
+      </AnimatePresence>
     </div>
   );
 };

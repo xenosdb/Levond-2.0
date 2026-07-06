@@ -43,3 +43,10 @@
 - Azumi como operador del CRM vía function-calling ejecutable (crear/editar contacto, oportunidad, reserva) — ya existe base en nexus_kb.try_execute_action; ampliar acciones y UI de confirmación.
 - Colaboración multi-agente que consolide varias señales en una sola recomendación.
 - Gestión de usuarios/roles/permisos granulares + Dashboard adaptado por permisos (invitar por email, activar/desactivar, reset password, departamentos/cargos, roles personalizados).
+
+## Update (2026-07-06 #5) — UI Ficha 360° del Cliente
+- Nuevo `Client360.jsx` (drawer lateral premium) conectado al backend ya existente (`/contacts/{id}/360`, `/interactions`). Reutiliza el módulo Contactos existente (BusinessModules).
+- Tabs: Perfil (editable con botón Editar/Guardar), Documentación (pasaporte/visa + vencimientos con alertas, adjuntos), Historial comercial (reservas/propuestas/facturas + destinos visitados), Cronología (timeline vertical de todos los eventos), Notas (registrar nota/llamada/reunión/tarea/comentario).
+- Header con avatar, badge VIP, stats rápidas (ingresos/reservas/propuestas/canceladas) y alertas (pasaporte/visa/cumpleaños próximos).
+- Contactos: tarjetas ahora clicables → abren la ficha 360°; badge VIP y país en la tarjeta.
+- VERIFICADO runtime (headless): drawer abre, 5 tabs, historial con reservas, timeline, alta de interacción persiste, edición de perfil (company) guarda y refleja. 0 errores.
